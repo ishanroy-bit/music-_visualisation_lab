@@ -1,0 +1,1376 @@
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(244, 180, 0, 0.14), transparent 30%),
+    radial-gradient(circle at top right, rgba(29, 158, 117, 0.12), transparent 28%),
+    linear-gradient(180deg, #f8f3ea 0%, #efe6d6 100%);
+}
+#app {
+  padding: 1.25rem 1rem 2.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+  font-family: Georgia, "Times New Roman", serif;
+  color: #201a13;
+}
+.topbar-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 1rem;
+  padding: 0 0.25rem;
+}
+h2 { font-size: 22px; font-weight: 700; color: #1e1712; letter-spacing: -0.02em; margin: 0; }
+.sub { display: none; }
+canvas {
+  width: 100%;
+  height: 88px;
+  display: block;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.78), rgba(236, 228, 214, 0.96));
+  border: 1px solid rgba(98, 75, 45, 0.12);
+}
+.topbar-actions { display: flex; align-items: center; gap: 8px; }
+.settings-btn {
+  border: 1px solid rgba(98, 75, 45, 0.18);
+  background: rgba(255,255,255,0.82);
+  color: #241a13;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: transform 0.15s, background 0.15s;
+}
+.settings-btn:hover { background: #fff8ef; transform: translateY(-1px); }
+.settings-meta { display: none; }
+.row { display: flex; align-items: center; gap: 10px; margin: 10px 0 0; }
+.row label { font-size: 13px; color: #6f5d4e; white-space: nowrap; min-width: 80px; }
+.row input[type=range] { flex: 1; }
+.row-val { font-size: 13px; font-weight: 700; color: #241a13; min-width: 36px; text-align: right; }
+.level-wrap { height: 8px; background: rgba(93, 76, 55, 0.14); border-radius: 999px; overflow: hidden; margin: 12px 0 6px; position: relative; }
+.level-fill { height: 100%; border-radius: 3px; transition: width 0.05s, background 0.1s; width: 0%; background: #1D9E75; }
+.gate-line { position: absolute; top: 0; bottom: 0; width: 2px; background: #E24B4A; border-radius: 1px; box-shadow: 0 0 0 4px rgba(226, 75, 74, 0.1); }
+.gate-indicator { display: flex; align-items: center; gap: 8px; margin-bottom: 1.1rem; }
+.gate-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(93, 76, 55, 0.2); transition: background 0.1s; flex-shrink: 0; box-shadow: 0 0 0 6px rgba(255,255,255,0.4); }
+.gate-dot.open { background: #1D9E75; }
+.gate-dot.closed { background: #E24B4A; }
+.gate-text { font-size: 12px; color: #6f5d4e; }
+.chord-display {
+  background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(244, 236, 224, 0.92));
+  border-radius: 24px;
+  border: 1px solid rgba(98, 75, 45, 0.12);
+  padding: 1.5rem 1.25rem;
+  text-align: center;
+  margin-bottom: 1rem;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 18px 32px rgba(87, 64, 33, 0.08);
+}
+.chord-name { font-size: 48px; font-weight: 700; color: #1e1712; min-height: 58px; transition: opacity 0.3s; letter-spacing: -0.03em; }
+.chord-name.muted { opacity: 0.2; }
+.main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: 1rem;
+}
+.main-grid .chord-display,
+.main-grid .theory-panel {
+  margin-bottom: 0;
+  height: 100%;
+}
+.theory-panel {
+  background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(246, 238, 226, 0.96));
+  border-radius: 24px;
+  border: 1px solid rgba(98, 75, 45, 0.12);
+  padding: 1.2rem;
+  margin-bottom: 1rem;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 18px 32px rgba(87, 64, 33, 0.08);
+}
+.theory-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 0.9rem; }
+.theory-title { font-size: 14px; font-weight: 700; color: #1e1712; }
+.theory-copy { font-size: 11px; color: #6f5d4e; margin-top: 3px; line-height: 1.45; max-width: 34ch; }
+.mode-switch {
+  display: inline-flex;
+  gap: 6px;
+  padding: 4px;
+  background: rgba(255,255,255,0.72);
+  border: 1px solid rgba(98, 75, 45, 0.12);
+  border-radius: 999px;
+}
+.mode-btn {
+  border: none;
+  background: transparent;
+  color: #6f5d4e;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.mode-btn.active { background: #1f7e64; color: #f8f3ea; }
+.circle-layout { display: grid; grid-template-columns: 1fr; gap: 0.85rem; align-items: start; }
+.circle-wrap {
+  padding: 0.55rem;
+  border-radius: 22px;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.98), rgba(243, 234, 219, 0.92));
+  border: 1px solid rgba(98, 75, 45, 0.1);
+  max-width: 340px;
+  margin: 0 auto;
+}
+.circle-svg { width: 100%; height: auto; display: block; }
+.circle-caption {
+  margin-top: 0.65rem;
+  text-align: center;
+  font-size: 11px;
+  color: #6f5d4e;
+  line-height: 1.5;
+}
+.circle-caption strong { color: #2f241c; }
+.circle-node { cursor: pointer; transition: transform 0.15s; }
+.circle-node:hover { transform: scale(1.03); }
+.circle-ring-major { fill: rgba(255,255,255,0.9); stroke: rgba(98, 75, 45, 0.16); stroke-width: 1.4; }
+.circle-ring-minor { fill: rgba(248, 244, 236, 0.9); stroke: rgba(98, 75, 45, 0.12); stroke-width: 1.1; }
+.circle-node.active .circle-ring-major,
+.circle-node.active .circle-ring-minor { fill: #1f7e64; stroke: #165947; }
+.circle-node.related .circle-ring-major,
+.circle-node.related .circle-ring-minor { fill: #eadfca; stroke: rgba(124, 90, 43, 0.35); }
+.circle-node.detected .circle-ring-major,
+.circle-node.detected .circle-ring-minor { fill: #ef9f27; stroke: #b56b00; }
+.circle-label-major,
+.circle-label-minor {
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+.circle-label-major { font-size: 12px; fill: #241a13; }
+.circle-label-minor { font-size: 11px; fill: #66584b; }
+.circle-node.active .circle-label-major,
+.circle-node.active .circle-label-minor,
+.circle-node.detected .circle-label-major,
+.circle-node.detected .circle-label-minor { fill: #fff8ef; }
+.theory-card {
+  border-radius: 22px;
+  background: rgba(255,255,255,0.68);
+  border: 1px solid rgba(98, 75, 45, 0.1);
+  padding: 0.9rem;
+}
+.theory-key { font-size: 28px; font-weight: 700; color: #1e1712; letter-spacing: -0.03em; margin-bottom: 4px; line-height: 1.05; }
+.theory-subkey { font-size: 12px; color: #6f5d4e; margin-bottom: 0.85rem; line-height: 1.4; }
+.theory-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 1rem; }
+.theory-stat {
+  padding: 0.65rem 0.7rem;
+  border-radius: 14px;
+  background: rgba(247, 240, 229, 0.98);
+  border: 1px solid rgba(98, 75, 45, 0.08);
+}
+.theory-stat-label { font-size: 10px; color: #7b6958; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+.theory-stat-value { font-size: 15px; font-weight: 700; color: #241a13; line-height: 1.2; }
+.theory-mini {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+.theory-mini-card {
+  padding: 0.65rem 0.7rem;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.78);
+  border: 1px solid rgba(98, 75, 45, 0.08);
+}
+.theory-mini-label { font-size: 10px; color: #7b6958; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+.theory-mini-value { font-size: 13px; font-weight: 700; color: #241a13; line-height: 1.35; }
+.theory-chords-label,
+.theory-scale-label { font-size: 10px; color: #7b6958; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 7px; }
+.theory-chords { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 0.9rem; }
+.theory-chord-pill {
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.84);
+  border: 1px solid rgba(98, 75, 45, 0.12);
+  color: #5f4f41;
+  font-size: 11px;
+  font-weight: 700;
+}
+.theory-scale { font-size: 13px; color: #3b3028; line-height: 1.55; }
+.theory-progressions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 0.85rem;
+}
+.theory-prog-pill {
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(31, 126, 100, 0.08);
+  border: 1px solid rgba(31, 126, 100, 0.16);
+  color: #165947;
+  font-size: 11px;
+  font-weight: 700;
+}
+.tuner-card {
+  background:
+    radial-gradient(circle at top, rgba(255,255,255,0.65), transparent 46%),
+    linear-gradient(180deg, #1f2b2a 0%, #18201f 100%);
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,0.08);
+  padding: 1.15rem 1.25rem 1.25rem;
+  text-align: center;
+  margin-bottom: 1rem;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 20px 40px rgba(15, 23, 42, 0.22);
+}
+.tuner-head { font-size: 12px; color: rgba(239, 230, 214, 0.72); margin-bottom: 0.45rem; text-transform: uppercase; letter-spacing: 0.12em; }
+.tuner-note { font-size: 56px; font-weight: 700; color: #f9f4e8; min-height: 64px; letter-spacing: -0.04em; }
+.tuner-string { font-size: 13px; color: rgba(239, 230, 214, 0.78); min-height: 18px; }
+.tuner-meter { position: relative; height: 12px; border-radius: 999px; background: rgba(255,255,255,0.08); margin: 16px 0 10px; overflow: hidden; }
+.tuner-center { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 3px; background: #f5e8c7; opacity: 0.95; transform: translateX(-50%); border-radius: 999px; }
+.tuner-fill { position: absolute; top: 0; bottom: 0; left: 50%; width: 0%; transform: translateX(-50%); background: #1D9E75; transition: width 0.08s, background 0.08s; box-shadow: 0 0 16px rgba(29, 158, 117, 0.45); }
+.tuner-labels { display: flex; justify-content: space-between; font-size: 11px; color: rgba(239, 230, 214, 0.6); }
+.tuner-status { font-size: 12px; color: rgba(239, 230, 214, 0.78); min-height: 16px; margin-top: 10px; }
+.notes-row { font-size: 14px; color: #66584b; margin-top: 10px; min-height: 20px; }
+.conf-label { font-size: 12px; color: #6f5d4e; margin-top: 10px; min-height: 16px; }
+.conf-bar-wrap { height: 6px; background: rgba(93, 76, 55, 0.12); border-radius: 999px; margin-top: 8px; overflow: hidden; }
+.conf-fill { height: 100%; background: #1D9E75; border-radius: 2px; transition: width 0.2s; width: 0%; }
+.note-pills { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
+.pill {
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: rgba(255,255,255,0.72);
+  border: 1px solid rgba(98, 75, 45, 0.12);
+  color: #6f5d4e;
+  transition: all 0.12s;
+}
+.pill.active { background: #dff5ec; border-color: rgba(29, 158, 117, 0.4); color: #085041; transform: translateY(-1px); }
+.history {
+  margin-bottom: 1rem;
+  padding: 1rem 1.1rem;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.62);
+  border: 1px solid rgba(98, 75, 45, 0.1);
+}
+.history-label { font-size: 12px; color: #6f5d4e; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.08em; }
+.history-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.history-pill { padding: 5px 11px; border-radius: 999px; font-size: 12px; background: rgba(247, 240, 229, 0.98); border: 1px solid rgba(98, 75, 45, 0.1); color: #5f4f41; font-weight: 700; }
+.btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(98, 75, 45, 0.16);
+  background: linear-gradient(135deg, #1f7e64 0%, #165947 100%);
+  color: #f8f3ea;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+  box-shadow: 0 16px 30px rgba(22, 89, 71, 0.22);
+}
+.btn:hover { transform: translateY(-1px); box-shadow: 0 20px 34px rgba(22, 89, 71, 0.26); }
+.btn.active { background: linear-gradient(135deg, #8d2d2d 0%, #662121 100%); border-color: rgba(141, 45, 45, 0.35); color: #fff4f4; box-shadow: 0 18px 32px rgba(141, 45, 45, 0.2); }
+.status { font-size: 12px; color: #6f5d4e; text-align: center; margin-top: 10px; min-height: 16px; }
+.modal-backdrop { display: none; align-items: flex-start; justify-content: center; padding: 1rem; }
+.modal-backdrop.open { display: flex; }
+.modal { width: min(100%, 440px); background: linear-gradient(180deg, #fffdf8, #f6ecdd); border: 1px solid rgba(98, 75, 45, 0.14); border-radius: 24px; box-shadow: 0 24px 54px rgba(15, 23, 42, 0.16); padding: 1.1rem; }
+.modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 0.75rem; }
+.modal-title { font-size: 18px; font-weight: 700; color: #1e1712; }
+.modal-close { border: none; background: rgba(255,255,255,0.74); color: #6f5d4e; font-size: 18px; line-height: 1; cursor: pointer; width: 32px; height: 32px; border-radius: 999px; box-shadow: 0 6px 12px rgba(89, 62, 31, 0.08); }
+.modal-copy { font-size: 12px; color: #6f5d4e; margin-bottom: 0.6rem; }
+@media (max-width: 700px) {
+  #app { padding-top: 1rem; }
+  h2 { font-size: 18px; }
+  .chord-name { font-size: 38px; }
+  .tuner-note { font-size: 48px; }
+  .main-grid { grid-template-columns: 1fr; }
+  .theory-head { flex-direction: column; align-items: stretch; }
+  .theory-grid { grid-template-columns: 1fr; }
+  .theory-mini { grid-template-columns: 1fr; }
+  .circle-wrap { max-width: none; }
+}
+@media (max-width: 480px) {
+  .main-grid { grid-template-columns: 1fr; }
+  .theory-grid { grid-template-columns: 1fr; }
+  .theory-mini { grid-template-columns: 1fr; }
+}
+</style>
+
+<div id="app">
+  <div class="topbar-main">
+    <h2 style="display:flex;align-items:center;gap:10px;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="flex-shrink:0;color:#7c5a2b"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      Guitar chord detector
+    </h2>
+    <div class="topbar-actions">
+      <div class="settings-meta" id="settings-summary">Gate 15%</div>
+      <button class="settings-btn" id="settings-btn" type="button">Settings</button>
+      <button class="settings-btn" id="tuner-btn" type="button">Tuner</button>
+    </div>
+  </div>
+
+  <div class="main-grid">
+    <div class="chord-display">
+      <canvas id="waveform"></canvas>
+
+      <div style="position:relative; margin: 10px 0 4px;">
+        <div class="level-wrap">
+          <div class="level-fill" id="level-fill"></div>
+        </div>
+        <div class="gate-line" id="gate-line" style="left:15%"></div>
+      </div>
+
+      <div class="gate-indicator">
+        <div class="gate-dot closed" id="gate-dot"></div>
+        <span class="gate-text" id="gate-text">Gate closed - signal below threshold</span>
+      </div>
+
+      <div class="chord-name muted" id="chord-name">-</div>
+      <div class="notes-row" id="notes-row">Start mic and play a chord</div>
+      <div class="conf-label" id="conf-label"></div>
+      <div class="conf-bar-wrap"><div class="conf-fill" id="conf-fill"></div></div>
+      <div class="note-pills" id="note-pills">
+        <span class="pill" data-note="C">C</span><span class="pill" data-note="C#">C#</span>
+        <span class="pill" data-note="D">D</span><span class="pill" data-note="D#">D#</span>
+        <span class="pill" data-note="E">E</span><span class="pill" data-note="F">F</span>
+        <span class="pill" data-note="F#">F#</span><span class="pill" data-note="G">G</span>
+        <span class="pill" data-note="G#">G#</span><span class="pill" data-note="A">A</span>
+        <span class="pill" data-note="A#">A#</span><span class="pill" data-note="B">B</span>
+      </div>
+
+      <div class="history" style="margin-top:1rem;margin-bottom:0;padding:0;background:none;border:none;">
+        <div class="history-label">Recent chords</div>
+        <div class="history-row" id="history-row"><span style="font-size:12px;color:#6f5d4e">-</span></div>
+      </div>
+    </div>
+
+    <div class="theory-panel">
+      <div class="theory-head">
+        <div>
+          <div class="theory-title">Circle of Fifths</div>
+          <div class="theory-copy">Explore key relationships, relative minors, and diatonic chords in theory order.</div>
+        </div>
+        <div class="mode-switch">
+          <button class="mode-btn active" id="major-mode-btn" type="button">Major</button>
+          <button class="mode-btn" id="minor-mode-btn" type="button">Minor</button>
+        </div>
+      </div>
+
+      <div class="circle-layout">
+        <div class="circle-wrap">
+          <svg class="circle-svg" id="cof-svg" viewBox="0 0 360 360" aria-label="Circle of fifths display"></svg>
+          <div class="circle-caption" id="circle-caption">
+            Clockwise adds tension and sharps. Counter-clockwise adds warmth and flats.
+          </div>
+        </div>
+
+        <div class="theory-card">
+          <div class="theory-key" id="theory-key">C major</div>
+          <div class="theory-subkey" id="theory-subkey">Relative minor: A minor</div>
+
+          <div class="theory-grid">
+            <div class="theory-stat">
+              <div class="theory-stat-label">Dominant</div>
+              <div class="theory-stat-value" id="theory-dominant">G</div>
+            </div>
+            <div class="theory-stat">
+              <div class="theory-stat-label">Subdominant</div>
+              <div class="theory-stat-value" id="theory-subdominant">F</div>
+            </div>
+          </div>
+
+          <div class="theory-mini">
+            <div class="theory-mini-card">
+              <div class="theory-mini-label">Theory Direction</div>
+              <div class="theory-mini-value" id="theory-direction">1 step clockwise from C</div>
+            </div>
+            <div class="theory-mini-card">
+              <div class="theory-mini-label">Key Signature</div>
+              <div class="theory-mini-value" id="theory-signature">0 accidentals</div>
+            </div>
+          </div>
+
+          <div class="theory-chords-label">Core Progressions</div>
+          <div class="theory-progressions" id="theory-progressions"></div>
+
+          <div class="theory-chords-label">Diatonic Chords</div>
+          <div class="theory-chords" id="theory-chords"></div>
+
+          <div class="theory-scale-label">Scale Notes</div>
+          <div class="theory-scale" id="theory-scale">C - D - E - F - G - A - B</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn" id="toggle-btn" onclick="toggleMic()" style="margin-top:1rem;">Start detection</button>
+  <div class="status" id="status">Microphone not started</div>
+
+  <div class="modal-backdrop" id="settings-backdrop">
+    <div style="background:rgba(15,23,42,0.35);border-radius:24px;padding:1rem;width:100%;">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <div class="modal-head">
+        <div class="modal-title" id="settings-title">Detection settings</div>
+        <button class="modal-close" id="settings-close" type="button" aria-label="Close settings">x</button>
+      </div>
+      <div class="modal-copy">Tune the input threshold for chord detection.</div>
+      <div class="row">
+        <label>Noise gate</label>
+        <input type="range" id="gate-slider" min="1" max="60" value="15" step="1">
+        <span class="row-val" id="gate-val">15%</span>
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="tuner-backdrop">
+    <div style="background:rgba(15,23,42,0.35);border-radius:24px;padding:1rem;width:100%;">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="tuner-title">
+      <div class="modal-head">
+        <div class="modal-title" id="tuner-title">Guitar tuner</div>
+        <button class="modal-close" id="tuner-close" type="button" aria-label="Close tuner">x</button>
+      </div>
+      <div class="modal-copy">Use the existing mic and pluck one string at a time for the cleanest tuning result.</div>
+      <div class="tuner-card" style="margin-bottom:0;">
+        <div class="tuner-head">Live tuning</div>
+        <div class="tuner-note" id="tuner-note">-</div>
+        <div class="tuner-string" id="tuner-string">Nearest string: -</div>
+        <div class="tuner-meter">
+          <div class="tuner-fill" id="tuner-fill"></div>
+          <div class="tuner-center"></div>
+        </div>
+        <div class="tuner-labels">
+          <span>Flat</span>
+          <span>In tune</span>
+          <span>Sharp</span>
+        </div>
+        <div class="tuner-status" id="tuner-status">Open the mic and pluck one string</div>
+      </div>
+    </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const GUITAR_STRINGS = [
+  { label: "6th string", note: "E2", freq: 82.41 },
+  { label: "5th string", note: "A2", freq: 110.0 },
+  { label: "4th string", note: "D3", freq: 146.83 },
+  { label: "3rd string", note: "G3", freq: 196.0 },
+  { label: "2nd string", note: "B3", freq: 246.94 },
+  { label: "1st string", note: "E4", freq: 329.63 }
+];
+const CHORDS = {
+  "C major":["C","E","G"], "C minor":["C","D#","G"],
+  "C# major":["C#","F","G#"], "C# minor":["C#","E","G#"],
+  "D major":["D","F#","A"], "D minor":["D","F","A"],
+  "D# major":["D#","G","A#"], "D# minor":["D#","F#","A#"],
+  "E major":["E","G#","B"], "E minor":["E","G","B"],
+  "F major":["F","A","C"], "F minor":["F","G#","C"],
+  "F# major":["F#","A#","C#"], "F# minor":["F#","A","C#"],
+  "G major":["G","B","D"], "G minor":["G","A#","D"],
+  "G# major":["G#","C","D#"], "G# minor":["G#","B","D#"],
+  "A major":["A","C#","E"], "A minor":["A","C","E"],
+  "A# major":["A#","D","F"], "A# minor":["A#","C#","F"],
+  "B major":["B","D#","F#"], "B minor":["B","D","F#"],
+  "C7":["C","E","G","A#"], "G7":["G","B","D","F"],
+  "D7":["D","F#","A","C"], "Am7":["A","C","E","G"],
+  "Em7":["E","G","B","D"],
+  "Cadd9":["C","D","E","G"], "Dadd9":["D","E","F#","A"],
+  "Eadd9":["E","F#","G#","B"], "Gadd9":["G","A","B","D"],
+  "Aadd9":["A","B","C#","E"]
+};
+const COF_MAJOR = ["C","G","D","A","E","B","F#","C#","G#","D#","A#","F"];
+const COF_MINOR = ["A","E","B","F#","C#","G#","D#","A#","F","C","G","D"];
+const SHARP_ORDER = ["F#","C#","G#","D#","A#","E#","B#"];
+const FLAT_ORDER = ["Bb","Eb","Ab","Db","Gb","Cb","Fb"];
+const MAJOR_THEORY = {
+  "C": { relative: "A minor", dominant: "G", subdominant: "F", scale: ["C","D","E","F","G","A","B"], chords: ["C","Dm","Em","F","G","Am","Bdim"] },
+  "G": { relative: "E minor", dominant: "D", subdominant: "C", scale: ["G","A","B","C","D","E","F#"], chords: ["G","Am","Bm","C","D","Em","F#dim"] },
+  "D": { relative: "B minor", dominant: "A", subdominant: "G", scale: ["D","E","F#","G","A","B","C#"], chords: ["D","Em","F#m","G","A","Bm","C#dim"] },
+  "A": { relative: "F# minor", dominant: "E", subdominant: "D", scale: ["A","B","C#","D","E","F#","G#"], chords: ["A","Bm","C#m","D","E","F#m","G#dim"] },
+  "E": { relative: "C# minor", dominant: "B", subdominant: "A", scale: ["E","F#","G#","A","B","C#","D#"], chords: ["E","F#m","G#m","A","B","C#m","D#dim"] },
+  "B": { relative: "G# minor", dominant: "F#", subdominant: "E", scale: ["B","C#","D#","E","F#","G#","A#"], chords: ["B","C#m","D#m","E","F#","G#m","A#dim"] },
+  "F#": { relative: "D# minor", dominant: "C#", subdominant: "B", scale: ["F#","G#","A#","B","C#","D#","F"], chords: ["F#","G#m","A#m","B","C#","D#m","Fdim"] },
+  "C#": { relative: "A# minor", dominant: "G#", subdominant: "F#", scale: ["C#","D#","F","F#","G#","A#","C"], chords: ["C#","D#m","Fm","F#","G#","A#m","Cdim"] },
+  "G#": { relative: "F minor", dominant: "D#", subdominant: "C#", scale: ["G#","A#","C","C#","D#","F","G"], chords: ["G#","A#m","Cm","C#","D#","Fm","Gdim"] },
+  "D#": { relative: "C minor", dominant: "A#", subdominant: "G#", scale: ["D#","F","G","G#","A#","C","D"], chords: ["D#","Fm","Gm","G#","A#","Cm","Ddim"] },
+  "A#": { relative: "G minor", dominant: "F", subdominant: "D#", scale: ["A#","C","D","D#","F","G","A"], chords: ["A#","Cm","Dm","D#","F","Gm","Adim"] },
+  "F": { relative: "D minor", dominant: "C", subdominant: "A#", scale: ["F","G","A","A#","C","D","E"], chords: ["F","Gm","Am","A#","C","Dm","Edim"] }
+};
+const MINOR_THEORY = {
+  "A": { relative: "C major", dominant: "E", subdominant: "D", scale: ["A","B","C","D","E","F","G"], chords: ["Am","Bdim","C","Dm","Em","F","G"] },
+  "E": { relative: "G major", dominant: "B", subdominant: "A", scale: ["E","F#","G","A","B","C","D"], chords: ["Em","F#dim","G","Am","Bm","C","D"] },
+  "B": { relative: "D major", dominant: "F#", subdominant: "E", scale: ["B","C#","D","E","F#","G","A"], chords: ["Bm","C#dim","D","Em","F#m","G","A"] },
+  "F#": { relative: "A major", dominant: "C#", subdominant: "B", scale: ["F#","G#","A","B","C#","D","E"], chords: ["F#m","G#dim","A","Bm","C#m","D","E"] },
+  "C#": { relative: "E major", dominant: "G#", subdominant: "F#", scale: ["C#","D#","E","F#","G#","A","B"], chords: ["C#m","D#dim","E","F#m","G#m","A","B"] },
+  "G#": { relative: "B major", dominant: "D#", subdominant: "C#", scale: ["G#","A#","B","C#","D#","E","F#"], chords: ["G#m","A#dim","B","C#m","D#m","E","F#"] },
+  "D#": { relative: "F# major", dominant: "A#", subdominant: "G#", scale: ["D#","F","F#","G#","A#","B","C#"], chords: ["D#m","Fdim","F#","G#m","A#m","B","C#"] },
+  "A#": { relative: "C# major", dominant: "F", subdominant: "D#", scale: ["A#","C","C#","D#","F","F#","G#"], chords: ["A#m","Cdim","C#","D#m","Fm","F#","G#"] },
+  "F": { relative: "G# major", dominant: "C", subdominant: "A#", scale: ["F","G","G#","A#","C","C#","D#"], chords: ["Fm","Gdim","G#","A#m","Cm","C#","D#"] },
+  "C": { relative: "D# major", dominant: "G", subdominant: "F", scale: ["C","D","D#","F","G","G#","A#"], chords: ["Cm","Ddim","D#","Fm","Gm","G#","A#"] },
+  "G": { relative: "A# major", dominant: "D", subdominant: "C", scale: ["G","A","A#","C","D","D#","F"], chords: ["Gm","Adim","A#","Cm","Dm","D#","F"] },
+  "D": { relative: "F major", dominant: "A", subdominant: "G", scale: ["D","E","F","G","A","A#","C"], chords: ["Dm","Edim","F","Gm","Am","A#","C"] }
+};
+
+let audioCtx = null;
+let analyser = null;
+let micStream = null;
+let micSource = null;
+let rafId = null;
+let running = false;
+let tunerAudioCtx = null;
+let tunerAnalyser = null;
+let tunerStream = null;
+let tunerSource = null;
+let tunerRafId = null;
+let tunerRunning = false;
+
+let chordHistory = [];
+let smoothedRms = 0;
+let gateThreshold = 0.15;
+
+let confirmedChord = "-";
+let candidateChord = "-";
+let candidateCount = 0;
+let confirmedConfidence = 0;
+let tunerPitchHistory = [];
+let theoryMode = "major";
+let theorySelection = "C";
+let theoryManualUntil = 0;
+
+const CONFIRM_FRAMES = 10;
+const canvas = document.getElementById("waveform");
+const c2d = canvas.getContext("2d");
+canvas.width = (canvas.offsetWidth || 540) * devicePixelRatio;
+canvas.height = 72 * devicePixelRatio;
+
+const settingsBackdrop = document.getElementById("settings-backdrop");
+const tunerBackdrop = document.getElementById("tuner-backdrop");
+const gateSlider = document.getElementById("gate-slider");
+const majorModeBtn = document.getElementById("major-mode-btn");
+const minorModeBtn = document.getElementById("minor-mode-btn");
+
+function updateSettingsSummary() {
+  document.getElementById("settings-summary").textContent = `Gate ${Math.round(gateThreshold * 100)}%`;
+}
+
+function updateGateUI() {
+  document.getElementById("gate-val").textContent = `${Math.round(gateThreshold * 100)}%`;
+  document.getElementById("gate-line").style.left = `${Math.round(gateThreshold * 100)}%`;
+}
+
+gateSlider.addEventListener("input", function() {
+  gateThreshold = Number(this.value) / 100;
+  updateGateUI();
+  updateSettingsSummary();
+});
+
+majorModeBtn.addEventListener("click", () => {
+  setTheorySelection("major", theorySelection, true);
+});
+
+minorModeBtn.addEventListener("click", () => {
+  setTheorySelection("minor", theorySelection, true);
+});
+
+document.getElementById("settings-btn").addEventListener("click", () => {
+  settingsBackdrop.classList.add("open");
+});
+
+document.getElementById("tuner-btn").addEventListener("click", async () => {
+  tunerBackdrop.classList.add("open");
+  updateTuner(-1);
+  await startTuner();
+});
+
+document.getElementById("settings-close").addEventListener("click", () => {
+  settingsBackdrop.classList.remove("open");
+});
+
+document.getElementById("tuner-close").addEventListener("click", async () => {
+  tunerBackdrop.classList.remove("open");
+  stopTuner();
+  updateTuner(-1);
+  document.getElementById("status").textContent = running ? "Listening... play a chord" : "Microphone not started";
+});
+
+settingsBackdrop.addEventListener("click", (event) => {
+  if (event.target === settingsBackdrop) settingsBackdrop.classList.remove("open");
+});
+
+tunerBackdrop.addEventListener("click", async (event) => {
+  if (event.target === tunerBackdrop) {
+    tunerBackdrop.classList.remove("open");
+    stopTuner();
+    updateTuner(-1);
+    document.getElementById("status").textContent = running ? "Listening... play a chord" : "Microphone not started";
+  }
+});
+
+updateGateUI();
+updateSettingsSummary();
+renderCircleOfFifths();
+updateTheoryPanel();
+
+async function toggleMic() {
+  if (running) {
+    stopMic();
+    return;
+  }
+
+  document.getElementById("status").textContent = "Requesting microphone...";
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: false
+      }
+    });
+
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 8192;
+    analyser.smoothingTimeConstant = 0.75;
+    analyser.minDecibels = -95;
+    analyser.maxDecibels = -20;
+
+    micSource = audioCtx.createMediaStreamSource(micStream);
+    micSource.connect(analyser);
+
+    running = true;
+    document.getElementById("toggle-btn").textContent = "Stop detection";
+    document.getElementById("toggle-btn").classList.add("active");
+    document.getElementById("status").textContent = "Listening... play a chord";
+    detect();
+  } catch (error) {
+    document.getElementById("status").textContent = "Mic access denied - allow mic and retry";
+  }
+}
+
+function stopMic() {
+  running = false;
+  if (rafId) cancelAnimationFrame(rafId);
+  rafId = null;
+
+  if (micSource) {
+    micSource.disconnect();
+    micSource = null;
+  }
+  if (micStream) {
+    micStream.getTracks().forEach(track => track.stop());
+    micStream = null;
+  }
+  if (audioCtx) {
+    audioCtx.close();
+    audioCtx = null;
+  }
+
+  analyser = null;
+  smoothedRms = 0;
+  candidateChord = "-";
+  candidateCount = 0;
+  confirmedChord = "-";
+  confirmedConfidence = 0;
+  tunerPitchHistory = [];
+
+  document.getElementById("toggle-btn").textContent = "Start detection";
+  document.getElementById("toggle-btn").classList.remove("active");
+  document.getElementById("status").textContent = "Detection stopped";
+  document.getElementById("level-fill").style.width = "0%";
+  document.getElementById("notes-row").textContent = "Start mic and play a chord";
+  document.getElementById("conf-label").textContent = "";
+  document.getElementById("conf-fill").style.width = "0%";
+  updateTuner(-1);
+  clearPills();
+  showChord("-", false);
+  setGateState("closed");
+}
+
+async function startTuner() {
+  if (tunerRunning) return;
+
+  try {
+    tunerStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false
+      }
+    });
+
+    tunerAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    tunerAnalyser = tunerAudioCtx.createAnalyser();
+    tunerAnalyser.fftSize = 8192;
+    tunerAnalyser.smoothingTimeConstant = 0.1;
+    tunerAnalyser.minDecibels = -100;
+    tunerAnalyser.maxDecibels = -10;
+    tunerSource = tunerAudioCtx.createMediaStreamSource(tunerStream);
+    tunerSource.connect(tunerAnalyser);
+    tunerPitchHistory = [];
+    tunerRunning = true;
+    document.getElementById("status").textContent = "Listening... tuner is ready";
+    tunerLoop();
+  } catch (error) {
+    document.getElementById("tuner-status").textContent = "Mic access denied - allow mic and retry";
+  }
+}
+
+function stopTuner() {
+  tunerRunning = false;
+  tunerPitchHistory = [];
+  if (tunerRafId) cancelAnimationFrame(tunerRafId);
+  tunerRafId = null;
+
+  if (tunerSource) {
+    tunerSource.disconnect();
+    tunerSource = null;
+  }
+  if (tunerStream) {
+    tunerStream.getTracks().forEach(track => track.stop());
+    tunerStream = null;
+  }
+  if (tunerAudioCtx) {
+    tunerAudioCtx.close();
+    tunerAudioCtx = null;
+  }
+  tunerAnalyser = null;
+}
+
+function getRms(td) {
+  let sum = 0;
+  for (let i = 0; i < td.length; i++) {
+    const value = (td[i] / 128) - 1;
+    sum += value * value;
+  }
+  return Math.sqrt(sum / td.length);
+}
+
+function drawWave(td, color) {
+  const width = canvas.width;
+  const height = canvas.height;
+  c2d.clearRect(0, 0, width, height);
+  c2d.strokeStyle = color;
+  c2d.lineWidth = 1.5 * devicePixelRatio;
+  c2d.beginPath();
+  const step = width / td.length;
+  for (let i = 0; i < td.length; i++) {
+    const y = ((td[i] / 128) * height) / 2;
+    if (i === 0) c2d.moveTo(0, y);
+    else c2d.lineTo(i * step, y);
+  }
+  c2d.stroke();
+}
+
+function getPitchInfo(freq) {
+  if (freq < 60 || freq > 1400) return null;
+  const midiFloat = 69 + (12 * Math.log2(freq / 440));
+  const midi = Math.round(midiFloat);
+  const cents = (midiFloat - midi) * 100;
+  return {
+    note: NOTE_NAMES[((midi % 12) + 12) % 12],
+    cents
+  };
+}
+
+function autoCorrelatePitch(floatBuffer, sampleRate) {
+  const originalSize = floatBuffer.length;
+  let rms = 0;
+  for (let i = 0; i < originalSize; i++) rms += floatBuffer[i] * floatBuffer[i];
+  rms = Math.sqrt(rms / originalSize);
+  if (rms < 0.008) return -1;
+
+  let start = 0;
+  let end = originalSize - 1;
+  const clipLevel = rms * 0.45;
+  while (start < originalSize / 2 && Math.abs(floatBuffer[start]) < clipLevel) start++;
+  while (end > originalSize / 2 && Math.abs(floatBuffer[end]) < clipLevel) end--;
+  const buffer = floatBuffer.slice(start, end);
+  const size = buffer.length;
+  if (size < 256) return -1;
+
+  let bestOffset = -1;
+  let bestCorrelation = 0;
+  const minOffset = Math.floor(sampleRate / 360);
+  const maxOffset = Math.floor(sampleRate / 70);
+
+  for (let offset = minOffset; offset <= maxOffset; offset++) {
+    let correlation = 0;
+    for (let i = 0; i < size - offset; i++) {
+      correlation += buffer[i] * buffer[i + offset];
+    }
+    correlation /= (size - offset);
+    if (correlation > bestCorrelation) {
+      bestCorrelation = correlation;
+      bestOffset = offset;
+    }
+  }
+
+  if (bestOffset === -1 || bestCorrelation < 0.03) return -1;
+
+  const prevOffset = Math.max(minOffset, bestOffset - 1);
+  const nextOffset = Math.min(maxOffset, bestOffset + 1);
+  const correlationAt = (offset) => {
+    let correlation = 0;
+    for (let i = 0; i < size - offset; i++) {
+      correlation += buffer[i] * buffer[i + offset];
+    }
+    return correlation / (size - offset);
+  };
+
+  const prev = correlationAt(prevOffset);
+  const center = correlationAt(bestOffset);
+  const next = correlationAt(nextOffset);
+  const denominator = prev - (2 * center) + next;
+  const shift = denominator === 0 ? 0 : 0.5 * ((prev - next) / denominator);
+  const refinedOffset = bestOffset + Math.max(-0.5, Math.min(0.5, shift));
+  return sampleRate / refinedOffset;
+}
+
+function getNearestGuitarString(freq) {
+  let best = null;
+  for (const string of GUITAR_STRINGS) {
+    const cents = 1200 * Math.log2(freq / string.freq);
+    const distance = Math.abs(cents);
+    if (!best || distance < best.distance) {
+      best = { ...string, cents, distance };
+    }
+  }
+  return best;
+}
+
+function getTunerPeakPitch(frequencyData, sampleRate, fftSize) {
+  const minFreq = 70;
+  const maxFreq = 360;
+  const minBin = Math.max(1, Math.floor((minFreq * fftSize) / sampleRate));
+  const maxBin = Math.min(frequencyData.length - 2, Math.ceil((maxFreq * fftSize) / sampleRate));
+  const peaks = [];
+
+  for (let i = minBin; i <= maxBin; i++) {
+    const value = frequencyData[i];
+    if (value < -72) continue;
+    if (value <= frequencyData[i - 1] || value <= frequencyData[i + 1]) continue;
+
+    const freq = (i * sampleRate) / fftSize;
+    const isLikelyHarmonic = peaks.some(peak => {
+      const ratio = freq / peak.freq;
+      return ratio > 1.6 && Math.abs(ratio - Math.round(ratio)) < 0.08;
+    });
+    if (!isLikelyHarmonic) {
+      peaks.push({ freq, value });
+    }
+  }
+
+  if (!peaks.length) return -1;
+  peaks.sort((a, b) => a.freq - b.freq || b.value - a.value);
+  return peaks[0].freq;
+}
+
+function chooseTunerPitch(autoPitch, peakPitch) {
+  const autoValid = autoPitch && autoPitch >= 70 && autoPitch <= 360;
+  const peakValid = peakPitch && peakPitch >= 70 && peakPitch <= 360;
+
+  if (autoValid && peakValid) {
+    const centsDelta = Math.abs(1200 * Math.log2(autoPitch / peakPitch));
+    if (centsDelta < 35) return (autoPitch + peakPitch) / 2;
+    return peakPitch;
+  }
+  if (autoValid) return autoPitch;
+  if (peakValid) return peakPitch;
+  return -1;
+}
+
+function parseChordForTheory(chordName) {
+  if (!chordName || chordName === "-") return null;
+  const match = chordName.match(/^([A-G]#?)(.*)$/);
+  if (!match) return null;
+  const root = match[1];
+  const suffix = match[2].toLowerCase();
+  const isMinor = suffix.includes("minor") || suffix.startsWith("m");
+  return { root, mode: isMinor ? "minor" : "major" };
+}
+
+function getTheoryMeta(mode, note) {
+  const list = mode === "major" ? COF_MAJOR : COF_MINOR;
+  const index = list.indexOf(note);
+  if (index === -1) {
+    return {
+      direction: "Center position",
+      signature: "Signature not mapped",
+      progressions: []
+    };
+  }
+
+  let direction = "Center position";
+  if (index > 0 && index < 6) direction = `${index} step${index === 1 ? "" : "s"} clockwise`;
+  else if (index === 6) direction = "6 steps clockwise";
+  else if (index === 7) direction = "5 steps counter-clockwise";
+  else if (index > 7 && index < 12) {
+    const steps = 12 - index;
+    direction = `${steps} step${steps === 1 ? "" : "s"} counter-clockwise`;
+  }
+
+  let signature = "0 accidentals";
+  if (index > 0 && index <= 6) {
+    signature = `${index} sharp${index === 1 ? "" : "s"} (${SHARP_ORDER.slice(0, index).join(", ")})`;
+  } else if (index >= 7) {
+    const flats = 12 - index;
+    signature = `${flats} flat${flats === 1 ? "" : "s"} (${FLAT_ORDER.slice(0, flats).join(", ")})`;
+  }
+
+  return {
+    direction,
+    signature,
+    progressions: mode === "major"
+      ? ["I - V - vi - IV", "I - IV - V", "ii - V - I"]
+      : ["i - VI - III - VII", "i - iv - V", "i - VII - VI - VII"]
+  };
+}
+
+function setTheorySelection(mode, note, manual = false) {
+  const map = mode === "major" ? MAJOR_THEORY : MINOR_THEORY;
+  const fallback = mode === "major" ? "C" : "A";
+  theoryMode = mode;
+  theorySelection = map[note] ? note : fallback;
+  if (manual) theoryManualUntil = Date.now() + 8000;
+  majorModeBtn.classList.toggle("active", theoryMode === "major");
+  minorModeBtn.classList.toggle("active", theoryMode === "minor");
+  renderCircleOfFifths();
+  updateTheoryPanel();
+}
+
+function renderCircleOfFifths() {
+  const svg = document.getElementById("cof-svg");
+  if (!svg) return;
+
+  const majorList = COF_MAJOR;
+  const minorList = COF_MINOR;
+  const selectedTheory = theoryMode === "major" ? MAJOR_THEORY[theorySelection] : MINOR_THEORY[theorySelection];
+  const detectedTheory = parseChordForTheory(confirmedChord);
+
+  svg.innerHTML = "";
+  const centerX = 180;
+  const centerY = 180;
+  const majorRadius = 128;
+  const minorRadius = 78;
+
+  const centerRing = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  centerRing.setAttribute("cx", centerX);
+  centerRing.setAttribute("cy", centerY);
+  centerRing.setAttribute("r", "34");
+  centerRing.setAttribute("fill", "rgba(255,255,255,0.82)");
+  centerRing.setAttribute("stroke", "rgba(98, 75, 45, 0.14)");
+  centerRing.setAttribute("pointer-events", "none");
+  svg.appendChild(centerRing);
+
+  const centerText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  centerText.setAttribute("x", centerX);
+  centerText.setAttribute("y", centerY - 6);
+  centerText.setAttribute("text-anchor", "middle");
+  centerText.setAttribute("font-size", "12");
+  centerText.setAttribute("font-weight", "700");
+  centerText.setAttribute("fill", "#6f5d4e");
+  centerText.setAttribute("pointer-events", "none");
+  centerText.textContent = "Circle";
+  svg.appendChild(centerText);
+
+  const centerText2 = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  centerText2.setAttribute("x", centerX);
+  centerText2.setAttribute("y", centerY + 12);
+  centerText2.setAttribute("text-anchor", "middle");
+  centerText2.setAttribute("font-size", "12");
+  centerText2.setAttribute("font-weight", "700");
+  centerText2.setAttribute("fill", "#6f5d4e");
+  centerText2.setAttribute("pointer-events", "none");
+  centerText2.textContent = "of Fifths";
+  svg.appendChild(centerText2);
+
+  majorList.forEach((note, index) => {
+    const angle = (-Math.PI / 2) + ((Math.PI * 2 * index) / majorList.length);
+    const majorX = centerX + Math.cos(angle) * majorRadius;
+    const majorY = centerY + Math.sin(angle) * majorRadius;
+    const minorX = centerX + Math.cos(angle) * minorRadius;
+    const minorY = centerY + Math.sin(angle) * minorRadius;
+    const relatedMajor = selectedTheory && (selectedTheory.dominant === note || selectedTheory.subdominant === note);
+    const relatedMinor = theoryMode === "major" && selectedTheory && selectedTheory.relative.startsWith(minorList[index]);
+    const majorDetected = detectedTheory && detectedTheory.mode === "major" && detectedTheory.root === note;
+    const minorDetected = detectedTheory && detectedTheory.mode === "minor" && detectedTheory.root === minorList[index];
+
+    const minorNode = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    minorNode.setAttribute("class", `circle-node${theoryMode === "minor" && theorySelection === minorList[index] ? " active" : ""}${relatedMinor ? " related" : ""}${minorDetected ? " detected" : ""}`);
+    minorNode.setAttribute("transform", `translate(${minorX}, ${minorY})`);
+    minorNode.addEventListener("click", () => {
+      setTheorySelection("minor", minorList[index], true);
+    });
+    minorNode.innerHTML = `<circle r="25" fill="transparent"></circle><circle class="circle-ring-minor" r="20"></circle><text class="circle-label-minor" y="1">${minorList[index]}m</text>`;
+    svg.appendChild(minorNode);
+
+    const majorNode = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    majorNode.setAttribute("class", `circle-node${theoryMode === "major" && theorySelection === note ? " active" : ""}${relatedMajor ? " related" : ""}${majorDetected ? " detected" : ""}`);
+    majorNode.setAttribute("transform", `translate(${majorX}, ${majorY})`);
+    majorNode.addEventListener("click", () => {
+      setTheorySelection("major", note, true);
+    });
+    majorNode.innerHTML = `<circle r="31" fill="transparent"></circle><circle class="circle-ring-major" r="26"></circle><text class="circle-label-major" y="1">${note}</text>`;
+    svg.appendChild(majorNode);
+  });
+}
+
+function updateTheoryPanel() {
+  const theory = theoryMode === "major" ? MAJOR_THEORY[theorySelection] : MINOR_THEORY[theorySelection];
+  if (!theory) return;
+  const meta = getTheoryMeta(theoryMode, theorySelection);
+  const detectedText = confirmedChord !== "-" ? `Detected chord: ${confirmedChord}` : "Detected chord will highlight here";
+
+  document.getElementById("theory-key").textContent = `${theorySelection} ${theoryMode}`;
+  document.getElementById("theory-subkey").textContent = `Relative ${theoryMode === "major" ? "minor" : "major"}: ${theory.relative}`;
+  document.getElementById("theory-dominant").textContent = theory.dominant;
+  document.getElementById("theory-subdominant").textContent = theory.subdominant;
+  document.getElementById("theory-direction").textContent = meta.direction;
+  document.getElementById("theory-signature").textContent = meta.signature;
+  document.getElementById("theory-progressions").innerHTML = meta.progressions
+    .map(prog => `<span class="theory-prog-pill">${prog}</span>`)
+    .join("");
+  document.getElementById("theory-scale").textContent = theory.scale.join(" - ");
+  document.getElementById("theory-chords").innerHTML = theory.chords
+    .map(chord => `<span class="theory-chord-pill">${chord}</span>`)
+    .join("");
+  document.getElementById("circle-caption").innerHTML = `<strong>${theorySelection} ${theoryMode}</strong> sits in theory order here. ${detectedText}.`;
+}
+
+function syncTheoryFromDetectedChord(chordName) {
+  if (Date.now() < theoryManualUntil) return;
+  const parsed = parseChordForTheory(chordName);
+  if (!parsed) return;
+
+  if (parsed.mode === "major" && MAJOR_THEORY[parsed.root]) {
+    setTheorySelection("major", parsed.root, false);
+  } else if (parsed.mode === "minor" && MINOR_THEORY[parsed.root]) {
+    setTheorySelection("minor", parsed.root, false);
+  } else {
+    return;
+  }
+}
+
+function updateTuner(freq) {
+  const noteEl = document.getElementById("tuner-note");
+  const stringEl = document.getElementById("tuner-string");
+  const fillEl = document.getElementById("tuner-fill");
+  const statusEl = document.getElementById("tuner-status");
+  const tunerOpen = tunerBackdrop.classList.contains("open");
+
+  if (!tunerOpen) {
+    noteEl.textContent = "-";
+    stringEl.textContent = "Nearest string: -";
+    fillEl.style.width = "0%";
+    fillEl.style.background = "#1D9E75";
+    statusEl.textContent = "Open the tuner popup";
+    return;
+  }
+
+  if (!freq || freq < 70 || freq > 360) {
+    tunerPitchHistory = [];
+    noteEl.textContent = "-";
+    stringEl.textContent = "Nearest string: -";
+    fillEl.style.width = "0%";
+    fillEl.style.background = "#1D9E75";
+    statusEl.textContent = tunerRunning ? "Pluck one guitar string and let it ring" : "Open tuner and allow mic";
+    return;
+  }
+
+  const pitch = getPitchInfo(freq);
+  const nearest = getNearestGuitarString(freq);
+  if (!pitch || !nearest) return;
+
+  tunerPitchHistory.push(freq);
+  if (tunerPitchHistory.length > 5) tunerPitchHistory.shift();
+  const smoothedFreq = [...tunerPitchHistory].sort((a, b) => a - b)[Math.floor(tunerPitchHistory.length / 2)];
+  const smoothedPitch = getPitchInfo(smoothedFreq);
+  const smoothedNearest = getNearestGuitarString(smoothedFreq);
+  if (!smoothedPitch || !smoothedNearest) return;
+
+  const cents = Math.max(-50, Math.min(50, smoothedNearest.cents));
+  const percent = Math.abs(cents) * 2;
+  const inTune = Math.abs(smoothedNearest.cents) < 8;
+
+  noteEl.textContent = smoothedPitch.note;
+  stringEl.textContent = `Nearest string: ${smoothedNearest.note} (${smoothedNearest.label})`;
+  fillEl.style.width = `${percent}%`;
+  fillEl.style.background = inTune ? "#1D9E75" : Math.abs(smoothedNearest.cents) < 18 ? "#EF9F27" : "#E24B4A";
+  statusEl.textContent = inTune
+    ? `In tune at ${smoothedFreq.toFixed(1)} Hz`
+    : `${smoothedNearest.cents < 0 ? "Flat" : "Sharp"} by ${Math.abs(Math.round(smoothedNearest.cents))} cents`;
+}
+
+function tunerLoop() {
+  if (!tunerRunning || !tunerAnalyser) return;
+
+  const tunerBuffer = new Float32Array(tunerAnalyser.fftSize);
+  tunerAnalyser.getFloatTimeDomainData(tunerBuffer);
+  const tunerFrequencyData = new Float32Array(tunerAnalyser.frequencyBinCount);
+  tunerAnalyser.getFloatFrequencyData(tunerFrequencyData);
+  const autoPitch = autoCorrelatePitch(tunerBuffer, tunerAudioCtx.sampleRate);
+  const peakPitch = getTunerPeakPitch(tunerFrequencyData, tunerAudioCtx.sampleRate, tunerAnalyser.fftSize);
+  const tunerPitch = chooseTunerPitch(autoPitch, peakPitch);
+  updateTuner(tunerPitch);
+  tunerRafId = requestAnimationFrame(tunerLoop);
+}
+
+function getPeaks(fd) {
+  const sampleRate = audioCtx.sampleRate;
+  const fft = analyser.fftSize;
+  const minBin = Math.floor(60 * fft / sampleRate);
+  const maxBin = Math.ceil(1400 * fft / sampleRate);
+  const minGap = Math.max(2, Math.floor(18 * fft / sampleRate));
+  const peaks = [];
+
+  for (let i = minBin + 1; i < maxBin - 1; i++) {
+    if (fd[i] > 100 && fd[i] > fd[i - 1] && fd[i] > fd[i + 1]) {
+      if (!peaks.length || i - peaks[peaks.length - 1].bin > minGap) {
+        const alpha = fd[i - 1];
+        const beta = fd[i];
+        const gamma = fd[i + 1];
+        const denominator = alpha - (2 * beta) + gamma;
+        const correction = denominator === 0 ? 0 : 0.5 * ((alpha - gamma) / denominator);
+        const preciseBin = i + Math.max(-0.5, Math.min(0.5, correction));
+        peaks.push({ bin: i, freq: preciseBin * sampleRate / fft, mag: fd[i] });
+      }
+    }
+  }
+
+  return peaks.slice(0, 18);
+}
+
+function suppressHarmonics(peaks) {
+  const ascending = [...peaks].sort((a, b) => a.freq - b.freq);
+  const kept = [];
+
+  for (const peak of ascending) {
+    const isHarmonic = kept.some(base => {
+      const ratio = peak.freq / base.freq;
+      return ratio > 1.6 && Math.abs(ratio - Math.round(ratio)) < 0.06;
+    });
+    if (!isHarmonic) kept.push(peak);
+  }
+
+  return kept.sort((a, b) => b.mag - a.mag).slice(0, 6);
+}
+
+function buildNoteProfile(peaks) {
+  const weights = {};
+
+  for (const peak of peaks) {
+    const pitch = getPitchInfo(peak.freq);
+    if (!pitch) continue;
+
+    const centsDistance = Math.abs(pitch.cents);
+    const tuningWeight = Math.max(0, 1 - (centsDistance / 45));
+    const magnitudeWeight = Math.max(0.15, peak.mag / 255);
+    const noteWeight = magnitudeWeight * (0.55 + tuningWeight);
+
+    weights[pitch.note] = (weights[pitch.note] || 0) + noteWeight;
+  }
+
+  return Object.entries(weights)
+    .sort((a, b) => b[1] - a[1])
+    .reduce((acc, [note, weight]) => {
+      acc[note] = weight;
+      return acc;
+    }, {});
+}
+
+function normalizeNoteWeights(noteWeights) {
+  const values = Object.values(noteWeights);
+  const maxWeight = values.length ? Math.max(...values) : 0;
+  if (!maxWeight) return {};
+
+  return Object.entries(noteWeights).reduce((acc, [note, weight]) => {
+    acc[note] = weight / maxWeight;
+    return acc;
+  }, {});
+}
+
+function detectChord(noteWeights) {
+  let best = { name: "-", score: 0 };
+  const normalized = normalizeNoteWeights(noteWeights);
+  const rankedNotes = Object.entries(normalized).sort((a, b) => b[1] - a[1]);
+  const detectedNotes = rankedNotes.map(([note]) => note);
+
+  for (const [name, required] of Object.entries(CHORDS)) {
+    const root = required[0];
+    const third = required[1];
+    const fifth = required[2];
+    const extension = required[3];
+
+    const rootWeight = normalized[root] || 0;
+    const thirdWeight = normalized[third] || 0;
+    const fifthWeight = normalized[fifth] || 0;
+    const extensionWeight = extension ? (normalized[extension] || 0) : 0;
+    const isSeventhChord = name.includes("7");
+    const isAdd9Chord = name.toLowerCase().includes("add9");
+    const isMinorChord = name.toLowerCase().includes("minor") || name === "Am7" || name === "Em7";
+    const rootRank = detectedNotes.indexOf(root);
+    const matched = required.filter(note => normalized[note] >= 0.22).length;
+    const extras = detectedNotes
+      .filter(note => !required.includes(note))
+      .reduce((sum, note) => sum + normalized[note], 0);
+    const missing = required.length - matched;
+    const hasCoreTriad = rootWeight >= 0.3 && thirdWeight >= 0.24;
+    const validSeventh = !isSeventhChord || extensionWeight >= 0.24;
+    const validAdd9 = !isAdd9Chord || extensionWeight >= 0.28;
+    const oppositeThird = (() => {
+      const rootIndex = NOTE_NAMES.indexOf(root);
+      const thirdIndex = NOTE_NAMES.indexOf(third);
+      if (rootIndex === -1 || thirdIndex === -1) return null;
+      const interval = (thirdIndex - rootIndex + 12) % 12;
+      if (interval === 4) return NOTE_NAMES[(rootIndex + 3) % 12];
+      if (interval === 3) return NOTE_NAMES[(rootIndex + 4) % 12];
+      return null;
+    })();
+    const oppositeThirdWeight = oppositeThird ? (normalized[oppositeThird] || 0) : 0;
+    const rootPositionPenalty = rootRank === -1 ? 1.1 : rootRank > 2 ? 0.8 : rootRank === 2 ? 0.35 : 0;
+    const weakFifthPenalty = fifthWeight < 0.16 ? 0.45 : 0;
+    const unstableMinorPenalty = isMinorChord && rootWeight < 0.46 ? 0.55 : 0;
+    const lowExtensionPenalty = isSeventhChord && extensionWeight < 0.24 ? 0.55 : 0;
+    const score =
+      (rootWeight * 2.25) +
+      (thirdWeight * 2.9) +
+      (fifthWeight * 1.4) +
+      (extensionWeight * (isAdd9Chord ? 1.1 : isSeventhChord ? 1.15 : 0.4)) +
+      (matched * 0.25) -
+      (extras * 1.2) -
+      (missing * 0.85) +
+      (matched === required.length ? 0.25 : 0) -
+      (oppositeThirdWeight * 1.3) -
+      rootPositionPenalty -
+      weakFifthPenalty -
+      unstableMinorPenalty -
+      lowExtensionPenalty -
+      (isAdd9Chord && extensionWeight < 0.28 ? 0.95 : 0);
+
+    if (hasCoreTriad && validSeventh && validAdd9 && rootRank !== -1 && rootRank < 4 && matched >= (isAdd9Chord ? 3 : 2) && score > best.score) {
+      const threshold = isSeventhChord ? 1.95 : 2.15;
+      best = { name: score > threshold ? name : "-", score };
+    }
+  }
+
+  return best;
+}
+
+function setGateState(state) {
+  const dot = document.getElementById("gate-dot");
+  const text = document.getElementById("gate-text");
+  dot.className = "gate-dot " + (state === "open" ? "open" : "closed");
+  text.textContent = state === "open"
+    ? "Gate open - detecting"
+    : confirmedChord !== "-"
+      ? "Gate closed - showing last confirmed chord"
+      : "Gate closed - signal below threshold";
+}
+
+function showChord(name, holding) {
+  const el = document.getElementById("chord-name");
+  el.textContent = name;
+  el.className = "chord-name" + (name === "-" ? " muted" : "");
+}
+
+function clearPills() {
+  document.querySelectorAll(".pill").forEach(pill => pill.classList.remove("active"));
+}
+
+function detect() {
+  if (!running || !analyser) return;
+
+  const td = new Uint8Array(analyser.fftSize);
+  analyser.getByteTimeDomainData(td);
+  const fd = new Uint8Array(analyser.frequencyBinCount);
+  analyser.getByteFrequencyData(fd);
+
+  const rms = getRms(td);
+  smoothedRms = smoothedRms * 0.85 + rms * 0.15;
+
+  const levelPercent = Math.min(100, Math.round(smoothedRms * 400));
+  const levelFill = document.getElementById("level-fill");
+  levelFill.style.width = levelPercent + "%";
+  levelFill.style.background = smoothedRms >= gateThreshold ? "#1D9E75" : "#E24B4A";
+
+  const gateOpen = smoothedRms >= gateThreshold;
+  drawWave(td, gateOpen ? "#1D9E75" : "#B4B2A9");
+
+  if (!gateOpen) {
+    setGateState("closed");
+    if (confirmedChord !== "-") {
+      showChord(confirmedChord, false);
+      document.getElementById("notes-row").textContent = "Last detected chord remains on screen";
+      document.getElementById("conf-label").textContent = confirmedConfidence
+        ? `Last match confidence: ${confirmedConfidence}%`
+        : "Last confirmed chord";
+      document.getElementById("conf-fill").style.width = `${confirmedConfidence}%`;
+      clearPills();
+    } else {
+      document.getElementById("notes-row").textContent = "Play a chord";
+      document.getElementById("conf-label").textContent = "";
+      document.getElementById("conf-fill").style.width = "0%";
+    }
+    rafId = requestAnimationFrame(detect);
+    return;
+  }
+
+  setGateState("open");
+
+  const peaks = suppressHarmonics(getPeaks(fd));
+  const noteWeights = buildNoteProfile(peaks);
+  const noteSet = Object.keys(noteWeights).slice(0, 4);
+  const { name, score } = detectChord(noteWeights);
+
+  if (name !== "-") {
+    if (name === candidateChord) candidateCount++;
+    else {
+      candidateChord = name;
+      candidateCount = 1;
+    }
+  } else {
+    candidateChord = "-";
+    candidateCount = 0;
+  }
+
+  if (candidateCount >= CONFIRM_FRAMES && candidateChord !== confirmedChord) {
+    confirmedChord = candidateChord;
+    confirmedConfidence = Math.max(0, Math.min(100, Math.round((score / 4.4) * 100)));
+    showChord(confirmedChord, false);
+    syncTheoryFromDetectedChord(confirmedChord);
+
+    if (chordHistory[chordHistory.length - 1] !== confirmedChord) {
+      chordHistory.push(confirmedChord);
+      if (chordHistory.length > 6) chordHistory.shift();
+      document.getElementById("history-row").innerHTML =
+        chordHistory.map(chord => `<span class="history-pill">${chord}</span>`).join("");
+    }
+  }
+
+  if (confirmedChord !== "-") showChord(confirmedChord, false);
+  else showChord("-", false);
+
+  clearPills();
+  noteSet.forEach(note => {
+    const pill = document.querySelector(`.pill[data-note="${note}"]`);
+    if (pill) pill.classList.add("active");
+  });
+
+  document.getElementById("notes-row").textContent =
+    noteSet.length ? `Detected: ${noteSet.join(" - ")}` : "No strong signal";
+
+  const percent = Math.max(0, Math.min(100, Math.round((score / 4.4) * 100)));
+  document.getElementById("conf-fill").style.width = percent + "%";
+  document.getElementById("conf-label").textContent =
+    confirmedChord !== "-" ? `Match confidence: ${percent}%` : "";
+
+  rafId = requestAnimationFrame(detect);
+}
+</script>
